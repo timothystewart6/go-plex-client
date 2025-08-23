@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -61,7 +62,7 @@ type Metadata struct {
 	Index                 int64        `json:"index"`
 	Key                   string       `json:"key"`
 	LastViewedAt          int          `json:"lastViewedAt"`
-	LibrarySectionID      json.Number  `json:"librarySectionID"`
+	LibrarySectionID      FlexibleInt  `json:"librarySectionID"`
 	LibrarySectionKey     string       `json:"librarySectionKey"`
 	LibrarySectionTitle   string       `json:"librarySectionTitle"`
 	OriginallyAvailableAt string       `json:"originallyAvailableAt"`
@@ -82,7 +83,7 @@ type Metadata struct {
 	TitleSort             string       `json:"titleSort"`
 	Type                  string       `json:"type"`
 	UpdatedAt             int          `json:"updatedAt"`
-	ViewCount             json.Number  `json:"viewCount"`
+	ViewCount             FlexibleInt  `json:"viewCount"`
 	ViewOffset            int          `json:"viewOffset"`
 	Year                  int          `json:"year"`
 	Director              []TaggedData `json:"Director"`
@@ -123,6 +124,59 @@ func (b *boolOrInt) UnmarshalJSON(data []byte) error {
 	b.bool = isBool
 
 	return nil
+}
+
+// FlexibleInt supports unmarshaling from both string and integer JSON values
+type FlexibleInt struct {
+	value int64
+}
+
+func (f *FlexibleInt) UnmarshalJSON(data []byte) error {
+	// Try to unmarshal as an integer first
+	var intVal int64
+	if err := json.Unmarshal(data, &intVal); err == nil {
+		f.value = intVal
+		return nil
+	}
+
+	// Try to unmarshal as a string
+	var strVal string
+	if err := json.Unmarshal(data, &strVal); err != nil {
+		return fmt.Errorf("cannot unmarshal %s into FlexibleInt", data)
+	}
+
+	// Convert string to int64
+	if strVal == "" {
+		f.value = 0
+		return nil
+	}
+
+	// Handle non-numeric string values gracefully by returning 0
+	intVal, err := strconv.ParseInt(strVal, 10, 64)
+	if err != nil {
+		// For non-numeric strings, default to 0 instead of erroring
+		// This handles cases where the API returns unexpected string values
+		f.value = 0
+		return nil
+	}
+
+	f.value = intVal
+	return nil
+}
+
+// Int64 returns the int64 value
+func (f *FlexibleInt) Int64() (int64, error) {
+	return f.value, nil
+}
+
+// String returns the string representation
+func (f *FlexibleInt) String() string {
+	return fmt.Sprintf("%d", f.value)
+}
+
+// MarshalJSON implements json.Marshaler
+func (f *FlexibleInt) MarshalJSON() ([]byte, error) {
+	return json.Marshal(f.value)
 }
 
 // Media media info
@@ -776,23 +830,24 @@ type request struct {
 // TranscodeSessionsResponse is the result for transcode session endpoint /transcode/sessions
 type TranscodeSessionsResponse struct {
 	Children []struct {
-		ElementType   string  `json:"_elementType"`
-		AudioChannels int     `json:"audioChannels"`
-		AudioCodec    string  `json:"audioCodec"`
-		AudioDecision string  `json:"audioDecision"`
-		Container     string  `json:"container"`
-		Context       string  `json:"context"`
-		Duration      int     `json:"duration"`
-		Height        int     `json:"height"`
-		Key           string  `json:"key"`
-		Progress      float64 `json:"progress"`
-		Protocol      string  `json:"protocol"`
-		Remaining     int     `json:"remaining"`
-		Speed         float64 `json:"speed"`
-		Throttled     bool    `json:"throttled"`
-		VideoCodec    string  `json:"videoCodec"`
-		VideoDecision string  `json:"videoDecision"`
-		Width         int     `json:"width"`
+		ElementType       string  `json:"_elementType"`
+		AudioChannels     int     `json:"audioChannels"`
+		AudioCodec        string  `json:"audioCodec"`
+		AudioDecision     string  `json:"audioDecision"`
+		Container         string  `json:"container"`
+		Context           string  `json:"context"`
+		Duration          int     `json:"duration"`
+		Height            int     `json:"height"`
+		Key               string  `json:"key"`
+		Progress          float64 `json:"progress"`
+		Protocol          string  `json:"protocol"`
+		Remaining         int     `json:"remaining"`
+		Speed             float64 `json:"speed"`
+		SubtitleDecision  string  `json:"subtitleDecision"`
+		Throttled         bool    `json:"throttled"`
+		VideoCodec        string  `json:"videoCodec"`
+		VideoDecision     string  `json:"videoDecision"`
+		Width             int     `json:"width"`
 	} `json:"_children"`
 	ElementType string `json:"_elementType"`
 }

@@ -85,6 +85,7 @@ type TranscodeSession struct {
 	SourceAudioCodec     string  `json:"sourceAudioCodec"`
 	SourceVideoCodec     string  `json:"sourceVideoCodec"`
 	Speed                float64 `json:"speed"`
+	SubtitleDecision     string  `json:"subtitleDecision"`
 	Throttled            bool    `json:"throttled"`
 	TranscodeHwRequested bool    `json:"transcodeHwRequested"`
 	VideoCodec           string  `json:"videoCodec"`
@@ -125,6 +126,7 @@ type NotificationContainer struct {
 	Size int64 `json:"size"`
 	// Type can be one of:
 	// playing,
+	// timeline,
 	// reachability,
 	// transcode.end,
 	// preference,
@@ -151,6 +153,7 @@ func NewNotificationEvents() *NotificationEvents {
 	return &NotificationEvents{
 		events: map[string]func(n NotificationContainer){
 			"playing":                   func(n NotificationContainer) {},
+			"timeline":                  func(n NotificationContainer) {},
 			"reachability":              func(n NotificationContainer) {},
 			"transcode.end":             func(n NotificationContainer) {},
 			"transcodeSession.end":      func(n NotificationContainer) {},
@@ -166,6 +169,11 @@ func NewNotificationEvents() *NotificationEvents {
 // OnPlaying shows state information (resume, stop, pause) on a user consuming media in plex
 func (e *NotificationEvents) OnPlaying(fn func(n NotificationContainer)) {
 	e.events["playing"] = fn
+}
+
+// OnTimeline handles timeline notification events for media playback tracking
+func (e *NotificationEvents) OnTimeline(fn func(n NotificationContainer)) {
+	e.events["timeline"] = fn
 }
 
 // OnTranscodeUpdate shows transcode information when a transcoding stream changes parameters
