@@ -167,9 +167,8 @@ func (p *Plex) Search(title string) (SearchResults, error) {
 		return SearchResults{}, err
 	}
 
-	// Unauthorized
-	if resp.StatusCode == http.StatusUnauthorized {
-		return SearchResults{}, errors.New(ErrorNotAuthorized)
+	if resp.StatusCode != http.StatusOK {
+		return SearchResults{}, fmt.Errorf(ErrorServer, resp.Status)
 	}
 
 	defer resp.Body.Close()

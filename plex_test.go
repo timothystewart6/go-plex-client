@@ -51,12 +51,12 @@ func newTestServer(code int, body string) (*httptest.Server, *Plex) {
 func TestSignIn(t *testing.T) {
 	username := os.Getenv("PLEX_USERNAME")
 	password := os.Getenv("PLEX_PASSWORD")
-	
+
 	if username == "" || password == "" {
 		t.Skip("Skipping TestSignIn - PLEX_USERNAME and PLEX_PASSWORD environment variables required")
 		return
 	}
-	
+
 	plex, err := SignIn(username, password)
 
 	if err != nil {
