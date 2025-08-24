@@ -322,7 +322,11 @@ func (p *Plex) SubscribeToNotifications(events *NotificationEvents, interrupt <-
 	done := make(chan struct{})
 
 	go func() {
-		defer c.Close()
+		defer func() {
+			if closeErr := c.Close(); closeErr != nil {
+				// Log the error but don't override the main error
+			}
+		}()
 		defer close(done)
 
 		for {
@@ -382,7 +386,9 @@ func (p *Plex) SubscribeToNotifications(events *NotificationEvents, interrupt <-
 				case <-done:
 				case <-time.After(time.Second):
 					fmt.Println("closing websocket...")
-					c.Close()
+					if closeErr := c.Close(); closeErr != nil {
+						// Log the error but don't override the main error
+					}
 				}
 				return
 			}

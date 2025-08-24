@@ -441,7 +441,9 @@ func pickServer(c *cli.Context) error {
 	fmt.Print("\nSelect a server: ")
 
 	var serverIndex int
-	fmt.Scanln(&serverIndex)
+	if _, err := fmt.Scanln(&serverIndex); err != nil {
+		return fmt.Errorf("failed to read server selection: %w", err)
+	}
 
 	// bound check input
 	if serverIndex < 0 || serverIndex > (len(servers)-1) {
@@ -460,7 +462,9 @@ func pickServer(c *cli.Context) error {
 	fmt.Print("\nPick the appropriate address: ")
 
 	var urlIndex int
-	fmt.Scanln(&urlIndex)
+	if _, err := fmt.Scanln(&urlIndex); err != nil {
+		return fmt.Errorf("failed to read URL selection: %w", err)
+	}
 
 	// bound check again
 	if urlIndex < 0 || urlIndex > (len(selectedServer.Connection)-1) {
@@ -600,7 +604,9 @@ func webhooks(c *cli.Context) error {
 		var index int
 
 		fmt.Print("enter a number to delete that webhook: ")
-		fmt.Scan(&index)
+		if _, err := fmt.Scan(&index); err != nil {
+			return fmt.Errorf("failed to read webhook index: %w", err)
+		}
 
 		bounds := len(hooks) - 1
 
@@ -790,7 +796,9 @@ func stopPlayback(c *cli.Context) error {
 
 	var sessionIndex int
 
-	fmt.Scanln(&sessionIndex)
+	if _, err := fmt.Scanln(&sessionIndex); err != nil {
+		return fmt.Errorf("failed to read session index: %w", err)
+	}
 
 	// bound check user input
 	if sessionIndex < 0 || sessionIndex > sessionCount-1 {
@@ -922,7 +930,9 @@ func downloadMedia(c *cli.Context) error {
 	selection := -1
 
 	fmt.Printf("choose media to download:")
-	fmt.Scanln(&selection)
+	if _, err := fmt.Scanln(&selection); err != nil {
+		return cli.NewExitError(fmt.Sprintf("failed to read selection: %v", err), 1)
+	}
 
 	// bound check user input
 	if selection < 0 || selection > len(results.MediaContainer.Metadata)-1 {

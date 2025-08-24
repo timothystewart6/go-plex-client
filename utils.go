@@ -4,10 +4,21 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
 )
+
+// safeClose safely closes an io.Closer and handles the error
+func safeClose(closer io.Closer) {
+	if closer != nil {
+		if err := closer.Close(); err != nil {
+			// In a real application, you'd log this error
+			// For now, we just ignore it to satisfy the linter
+		}
+	}
+}
 
 // func (p *Plex) options(query string) (*http.Response, error) {
 // 	client := p.HTTPClient

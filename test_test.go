@@ -1739,7 +1739,7 @@ func TestPlex_UpdateFriendAccess(t *testing.T) {
 
 	// Test with default values
 	defaultParams := UpdateFriendParams{}
-	result, err = plex.UpdateFriendAccess("123", defaultParams)
+	_, err = plex.UpdateFriendAccess("123", defaultParams)
 	if err != nil {
 		t.Errorf("UpdateFriendAccess() with defaults error = %v", err)
 	}
