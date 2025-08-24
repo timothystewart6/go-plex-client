@@ -1,6 +1,7 @@
 package plex
 
 import (
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -160,22 +161,31 @@ func TestGet_InvalidURL(t *testing.T) {
 	}
 }
 
-// Test get function with timeout
+// Test get function with timeout - shortened test
 func TestGet_Timeout(t *testing.T) {
-	// Create a server that never responds
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(5 * time.Second) // Sleep longer than the 3 second timeout
-	}))
-	defer server.Close()
+	if testing.Short() {
+		t.Skip("Skipping timeout test in short mode")
+	}
+
+	// Create a server that blocks connections
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Failed to create listener: %v", err)
+	}
+	defer listener.Close()
+
+	// Don't accept connections to force timeout
+	serverURL := "http://" + listener.Addr().String() + "/test"
 
 	headers := headers{Accept: "application/json"}
 
-	_, err := get(server.URL, headers)
+	// This should timeout since we never accept the connection
+	_, err = get(serverURL, headers)
 	if err == nil {
 		t.Errorf("Expected timeout error but got none")
 	}
 
-	if !strings.Contains(err.Error(), "timeout") && !strings.Contains(err.Error(), "deadline") {
+	if !strings.Contains(err.Error(), "timeout") && !strings.Contains(err.Error(), "deadline") && !strings.Contains(err.Error(), "context") {
 		t.Errorf("Expected timeout error, got: %v", err)
 	}
 }

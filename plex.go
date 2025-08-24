@@ -854,7 +854,7 @@ func (p *Plex) StopPlayback(machineID string) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf(resp.Status)
+		return fmt.Errorf("request failed: %s", resp.Status)
 	}
 
 	return nil
