@@ -3,3 +3,4 @@ vendor/*
 *.sh
 .idea
 coverage.*
+bin/
