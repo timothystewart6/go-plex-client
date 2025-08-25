@@ -147,7 +147,7 @@ func TestNewNotificationEvents(t *testing.T) {
 	}
 
 	// Test that default events are set up based on actual implementation
-	expectedEvents := []string{"timeline", "playing", "reachability", "transcode.end", "transcodeSession.end", "transcodeSession.update", "preference", "update.statechange", "activity", "backgroundProcessingQueue"}
+	expectedEvents := []string{"timeline", "provider.content.change", "playing", "reachability", "transcode.end", "transcodeSession.end", "transcodeSession.update", "preference", "update.statechange", "activity", "backgroundProcessingQueue"}
 	for _, event := range expectedEvents {
 		if _, exists := events.events[event]; !exists {
 			t.Errorf("Expected event '%s' not found in events map", event)
@@ -216,6 +216,26 @@ func TestNotificationEvents_OnTranscodeUpdate(t *testing.T) {
 		}
 	} else {
 		t.Error("transcodeSession.update event not found")
+	}
+}
+
+func TestNotificationEvents_OnProviderContentChange(t *testing.T) {
+	events := NewNotificationEvents()
+
+	called := false
+	testFunc := func(n NotificationContainer) {
+		called = true
+	}
+
+	events.OnProviderContentChange(testFunc)
+
+	if fn, exists := events.events["provider.content.change"]; exists {
+		fn(NotificationContainer{})
+		if !called {
+			t.Error("OnProviderContentChange function was not called")
+		}
+	} else {
+		t.Error("provider.content.change event not found")
 	}
 }
 
