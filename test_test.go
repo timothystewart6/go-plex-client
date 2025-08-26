@@ -530,6 +530,203 @@ func TestPlex_GetLibraries(t *testing.T) {
 	}
 }
 
+// Test GetLibrariesWithCounts function
+func TestPlex_GetLibrariesWithCounts(t *testing.T) {
+	// Mock the /library/sections response
+	sectionsResponse := LibrarySections{
+		MediaContainer: struct {
+			Directory []Directory `json:"Directory"`
+		}{
+			Directory: []Directory{
+				{Key: "1", Title: "Movies", Type: "movie"},
+				{Key: "2", Title: "Music", Type: "artist"},
+				{Key: "3", Title: "TV Shows", Type: "show"},
+			},
+		},
+	}
+
+	// Mock responses for individual library content
+	movieContent := SearchResults{
+		MediaContainer: SearchMediaContainer{
+			MediaContainer: MediaContainer{
+				Size: 150, // Movies count
+			},
+		},
+	}
+
+	musicContent := SearchResults{
+		MediaContainer: SearchMediaContainer{
+			MediaContainer: MediaContainer{
+				Size: 1250, // Music tracks count
+			},
+		},
+	}
+
+	tvContent := SearchResults{
+		MediaContainer: SearchMediaContainer{
+			MediaContainer: MediaContainer{
+				Size: 75, // TV episodes count
+			},
+		},
+	}
+
+	// Create test server that handles multiple endpoints
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		switch r.URL.Path {
+		case "/library/sections":
+			json.NewEncoder(w).Encode(sectionsResponse)
+		case "/library/sections/1/all":
+			json.NewEncoder(w).Encode(movieContent)
+		case "/library/sections/2/all":
+			json.NewEncoder(w).Encode(musicContent)
+		case "/library/sections/3/all":
+			json.NewEncoder(w).Encode(tvContent)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	// Create Plex client with test server
+	plex := &Plex{
+		URL:     server.URL,
+		Token:   "test-token",
+		Headers: defaultHeaders(),
+	}
+
+	// Test the function
+	result, err := plex.GetLibrariesWithCounts()
+	if err != nil {
+		t.Errorf("GetLibrariesWithCounts() error = %v", err)
+		return
+	}
+
+	if len(result.MediaContainer.Directory) != 3 {
+		t.Errorf("GetLibrariesWithCounts() directory count = %v, want 3", len(result.MediaContainer.Directory))
+		return
+	}
+
+	// Check Movies library
+	movies := result.MediaContainer.Directory[0]
+	if movies.Title != "Movies" {
+		t.Errorf("Movies library title = %v, want Movies", movies.Title)
+	}
+	if movies.Count != 150 {
+		t.Errorf("Movies library count = %v, want 150", movies.Count)
+	}
+
+	// Check Music library (this was the problematic one)
+	music := result.MediaContainer.Directory[1]
+	if music.Title != "Music" {
+		t.Errorf("Music library title = %v, want Music", music.Title)
+	}
+	if music.Count != 1250 {
+		t.Errorf("Music library count = %v, want 1250", music.Count)
+	}
+
+	// Check TV Shows library
+	tv := result.MediaContainer.Directory[2]
+	if tv.Title != "TV Shows" {
+		t.Errorf("TV Shows library title = %v, want TV Shows", tv.Title)
+	}
+	if tv.Count != 75 {
+		t.Errorf("TV Shows library count = %v, want 75", tv.Count)
+	}
+}
+
+// Test GetLibrariesWithCounts error handling
+// Duplicate TestPlex_GetLibrariesWithCounts_ErrorHandling removed to fix redeclaration error.
+
+// Test Directory CountAndScanned Fields
+func TestDirectory_CountAndScannedFields(t *testing.T) {
+	// Test JSON that includes the count and scanned fields that music libraries should return
+	jsonData := `{
+		"MediaContainer": {
+			"Directory": [
+				{
+					"key": "1",
+					"title": "Movies",
+					"type": "movie",
+					"agent": "com.plexapp.agents.imdb",
+					"scanner": "Plex Movie Scanner",
+					"count": 150,
+					"scanned": true
+				},
+				{
+					"key": "2", 
+					"title": "Music",
+					"type": "artist",
+					"agent": "com.plexapp.agents.lastfm",
+					"scanner": "Plex Music Scanner",
+					"count": 0,
+					"scanned": false
+				},
+				{
+					"key": "3",
+					"title": "TV Shows", 
+					"type": "show",
+					"agent": "com.plexapp.agents.thetvdb",
+					"scanner": "Plex Series Scanner",
+					"count": 75,
+					"scanned": true
+				}
+			]
+		}
+	}`
+
+	var libraries LibrarySections
+	err := json.Unmarshal([]byte(jsonData), &libraries)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal JSON: %v", err)
+	}
+
+	if len(libraries.MediaContainer.Directory) != 3 {
+		t.Errorf("Expected 3 libraries, got %d", len(libraries.MediaContainer.Directory))
+	}
+
+	// Test Movies library
+	movies := libraries.MediaContainer.Directory[0]
+	if movies.Title != "Movies" {
+		t.Errorf("Expected Movies library title, got %s", movies.Title)
+	}
+	if movies.Count != 150 {
+		t.Errorf("Expected Movies count 150, got %d", movies.Count)
+	}
+	if !movies.Scanned {
+		t.Errorf("Expected Movies to be scanned")
+	}
+
+	// Test Music library (the problematic one)
+	music := libraries.MediaContainer.Directory[1]
+	if music.Title != "Music" {
+		t.Errorf("Expected Music library title, got %s", music.Title)
+	}
+	if music.Count != 0 {
+		t.Errorf("Expected Music count 0 (the issue we're fixing), got %d", music.Count)
+	}
+	if music.Scanned {
+		t.Errorf("Expected Music to not be scanned")
+	}
+	if music.Type != "artist" {
+		t.Errorf("Expected Music type to be artist, got %s", music.Type)
+	}
+
+	// Test TV Shows library
+	tvShows := libraries.MediaContainer.Directory[2]
+	if tvShows.Title != "TV Shows" {
+		t.Errorf("Expected TV Shows library title, got %s", tvShows.Title)
+	}
+	if tvShows.Count != 75 {
+		t.Errorf("Expected TV Shows count 75, got %d", tvShows.Count)
+	}
+	if !tvShows.Scanned {
+		t.Errorf("Expected TV Shows to be scanned")
+	}
+}
+
 // Test GetLibraryContent function
 func TestPlex_GetLibraryContent(t *testing.T) {
 	contentResponse := SearchResults{
@@ -2150,5 +2347,106 @@ func TestPlex_GetMachineID(t *testing.T) {
 	_, err = plex.GetMachineID()
 	if err == nil {
 		t.Errorf("GetMachineID() expected error for token not found")
+	}
+}
+
+func TestFlexibleIntUnmarshaling(t *testing.T) {
+	tests := []struct {
+		name     string
+		jsonData string
+		expected int64
+	}{
+		{
+			name:     "String number",
+			jsonData: `{"librarySectionID": "123"}`,
+			expected: 123,
+		},
+		{
+			name:     "Integer number",
+			jsonData: `{"librarySectionID": 456}`,
+			expected: 456,
+		},
+		{
+			name:     "Empty string",
+			jsonData: `{"librarySectionID": ""}`,
+			expected: 0,
+		},
+		{
+			name:     "Invalid string",
+			jsonData: `{"librarySectionID": "abc"}`,
+			expected: 0,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var metadata Metadata
+			if err := json.Unmarshal([]byte(test.jsonData), &metadata); err != nil {
+				t.Errorf("Failed to unmarshal JSON: %v", err)
+				return
+			}
+
+			actual := metadata.LibrarySectionID.Int64()
+
+			if actual != test.expected {
+				t.Errorf("Expected %d, got %d", test.expected, actual)
+			}
+		})
+	}
+}
+
+func TestSubtitleDecisionInTranscodeSession(t *testing.T) {
+	jsonData := `{
+		"audioChannels": 2,
+		"audioCodec": "aac",
+		"audioDecision": "transcode",
+		"complete": false,
+		"container": "mkv",
+		"context": "streaming",
+		"duration": 7200000,
+		"key": "transcode/session/abc123",
+		"progress": 25.5,
+		"protocol": "http",
+		"remaining": 5400000,
+		"sourceAudioCodec": "ac3",
+		"sourceVideoCodec": "h264",
+		"speed": 1.0,
+		"subtitleDecision": "burn",
+		"throttled": false,
+		"transcodeHwRequested": true,
+		"videoCodec": "h264",
+		"videoDecision": "copy"
+	}`
+
+	var session TranscodeSession
+	if err := json.Unmarshal([]byte(jsonData), &session); err != nil {
+		t.Errorf("Failed to unmarshal TranscodeSession: %v", err)
+		return
+	}
+
+	if session.SubtitleDecision != "burn" {
+		t.Errorf("Expected SubtitleDecision to be 'burn', got '%s'", session.SubtitleDecision)
+	}
+
+	if session.AudioDecision != "transcode" {
+		t.Errorf("Expected AudioDecision to be 'transcode', got '%s'", session.AudioDecision)
+	}
+
+	if session.VideoDecision != "copy" {
+		t.Errorf("Expected VideoDecision to be 'copy', got '%s'", session.VideoDecision)
+	}
+}
+
+func TestTimelineEventHandler(t *testing.T) {
+	events := NewNotificationEvents()
+
+	// Test that we can set a timeline handler
+	events.OnTimeline(func(n NotificationContainer) {
+		// Handler logic would go here
+	})
+
+	// Verify the handler was set by checking if the events map contains it
+	if events.events["timeline"] == nil {
+		t.Error("Timeline event handler was not set")
 	}
 }

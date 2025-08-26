@@ -544,7 +544,7 @@ func getLibraries(c *cli.Context) error {
 
 	fmt.Println("getting libraries...")
 
-	libraries, err := plexConn.GetLibraries()
+	libraries, err := plexConn.GetLibrariesWithCounts()
 
 	if err != nil {
 		return cli.NewExitError(fmt.Sprintf("failed fetching libraries: %v", err), 1)
