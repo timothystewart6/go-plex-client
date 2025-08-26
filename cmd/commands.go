@@ -551,7 +551,19 @@ func getLibraries(c *cli.Context) error {
 	}
 
 	for _, dir := range libraries.MediaContainer.Directory {
-		fmt.Println(dir.Title)
+		fmt.Printf("Library: %s (Type: %s, Count: %d)\n", dir.Title, dir.Type, dir.Count)
+		fmt.Printf("\tKey: %s\n", dir.Key)
+		fmt.Printf("\tAgent: %s\n", dir.Agent)
+		fmt.Printf("\tScanner: %s\n", dir.Scanner)
+		if dir.Scanned {
+			fmt.Printf("\tStatus: Scanned\n")
+		} else {
+			fmt.Printf("\tStatus: Not scanned\n")
+		}
+		if dir.Refreshing {
+			fmt.Printf("\tRefreshing: Yes\n")
+		}
+		fmt.Println("\t=========================")
 	}
 
 	return nil
