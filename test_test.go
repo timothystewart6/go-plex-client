@@ -1885,12 +1885,13 @@ func TestPlex_UpdateFriendAccess(t *testing.T) {
 		// Check query parameters based on which call this is
 		query := r.URL.Query()
 		callCount++
-		if callCount == 1 {
+		switch callCount {
+		case 1:
 			// First call with explicit values
 			if query.Get("allowSync") != "1" {
 				t.Errorf("UpdateFriendAccess() allowSync = %v, want 1", query.Get("allowSync"))
 			}
-		} else if callCount == 2 {
+		case 2:
 			// Second call with defaults
 			if query.Get("allowSync") != "0" {
 				t.Errorf("UpdateFriendAccess() with defaults allowSync = %v, want 0", query.Get("allowSync"))

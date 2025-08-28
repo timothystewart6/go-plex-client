@@ -202,11 +202,7 @@ func SignIn(username, password string) (*Plex, error) {
 		return &Plex{}, err
 	}
 
-	defer func() {
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			// Log the error but don't override the main error
-		}
-	}()
+	defer safeClose(resp.Body)
 
 	if resp.StatusCode != http.StatusCreated {
 		return &Plex{}, errors.New(resp.Status)
@@ -244,11 +240,7 @@ func (p *Plex) Search(title string) (SearchResults, error) {
 		return SearchResults{}, fmt.Errorf(ErrorServer, resp.Status)
 	}
 
-	defer func() {
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			// Log the error but don't override the main error
-		}
-	}()
+	defer safeClose(resp.Body)
 
 	if err := json.NewDecoder(resp.Body).Decode(&results); err != nil {
 		return SearchResults{}, err
@@ -279,11 +271,7 @@ func (p *Plex) GetMetadata(key string) (MediaMetadata, error) {
 		return results, fmt.Errorf(ErrorServer, resp.Status)
 	}
 
-	defer func() {
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			// Log the error but don't override the main error
-		}
-	}()
+	defer safeClose(resp.Body)
 
 	if err := json.NewDecoder(resp.Body).Decode(&results); err != nil {
 		return results, err
@@ -313,11 +301,7 @@ func (p *Plex) GetMetadataChildren(key string) (MetadataChildren, error) {
 		return MetadataChildren{}, errors.New(ErrorNotAuthorized)
 	}
 
-	defer func() {
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			// Log the error but don't override the main error
-		}
-	}()
+	defer safeClose(resp.Body)
 
 	var results MetadataChildren
 
@@ -466,11 +450,7 @@ func (p *Plex) Download(meta Metadata, path string, createFolders bool, skipIfEx
 			if err != nil {
 				return err
 			}
-			defer func() {
-				if closeErr := out.Close(); closeErr != nil {
-					// Log the error but don't override the main error
-				}
-			}()
+				defer safeClose(out)
 
 			_, err = io.Copy(out, resp.Body)
 

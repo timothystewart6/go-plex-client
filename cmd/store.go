@@ -61,7 +61,7 @@ func initDataStore(dirName string) (store, error) {
 	return db, nil
 }
 
-func (s store) Close() {
+func (s *store) Close() {
 	if s.isClosed {
 		fmt.Println("data store already closed")
 		return

@@ -501,7 +501,8 @@ func TestPlex_AddWebhook(t *testing.T) {
 			setCallCount := 0
 
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.Method == http.MethodGet {
+				switch r.Method {
+				case http.MethodGet:
 					getCallCount++
 					if tt.getHooksError {
 						w.WriteHeader(http.StatusInternalServerError)
@@ -515,7 +516,7 @@ func TestPlex_AddWebhook(t *testing.T) {
 						hooks[i].URL = hook
 					}
 					json.NewEncoder(w).Encode(hooks)
-				} else if r.Method == http.MethodPost {
+				case http.MethodPost:
 					setCallCount++
 					if tt.setHooksError {
 						w.WriteHeader(http.StatusBadRequest)

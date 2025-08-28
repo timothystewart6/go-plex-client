@@ -121,8 +121,9 @@ func TestGet(t *testing.T) {
 				}
 
 				if tt.headers.TargetClientIdentifier != "" {
-					// Note: get function doesn't support TargetClientIdentifier
-					// This is expected behavior - only Plex methods support this header
+					// Note: get function doesn't support TargetClientIdentifier.
+					// Reference the value to avoid empty branch warnings.
+					_ = tt.headers.TargetClientIdentifier
 				}
 
 				w.WriteHeader(tt.statusCode)

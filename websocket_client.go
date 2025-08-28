@@ -356,11 +356,7 @@ func (p *Plex) SubscribeToNotificationsWithContext(ctx context.Context, events *
 
 	// Reader goroutine
 	go func() {
-		defer func() {
-			if closeErr := c.Close(); closeErr != nil {
-				// ignore
-			}
-		}()
+		defer safeClose(c)
 		defer close(done)
 
 		for {
@@ -421,9 +417,7 @@ func (p *Plex) SubscribeToNotificationsWithContext(ctx context.Context, events *
 				case <-done:
 				case <-time.After(time.Second):
 					logger.Info("closing websocket")
-					if closeErr := c.Close(); closeErr != nil {
-						// ignore
-					}
+					 safeClose(c)
 				}
 				return
 			}

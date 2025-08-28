@@ -29,6 +29,7 @@ func init() {
 	}
 }
 
+//nolint:unused
 func newTestServer(code int, body string) (*httptest.Server, *Plex) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(code)
