@@ -344,7 +344,7 @@ func (p *Plex) SubscribeToNotifications(events *NotificationEvents, interrupt <-
 			_, message, err := c.ReadMessage()
 
 			if err != nil {
-				fmt.Println("read:", err)
+				logger.Error("websocket read error", map[string]interface{}{"error": err.Error()})
 				fn(err)
 				return
 			}
@@ -354,7 +354,7 @@ func (p *Plex) SubscribeToNotifications(events *NotificationEvents, interrupt <-
 			var notif WebsocketNotification
 
 			if err := json.Unmarshal(message, &notif); err != nil {
-				fmt.Printf("convert message to json failed: %v\n", err)
+				logger.Warn("failed to unmarshal websocket message", map[string]interface{}{"error": err.Error()})
 				continue
 			}
 
@@ -362,7 +362,7 @@ func (p *Plex) SubscribeToNotifications(events *NotificationEvents, interrupt <-
 			fn, ok := events.events[notif.Type]
 
 			if !ok {
-				fmt.Printf("unknown websocket event name: %v\n", notif.Type)
+				logger.Warn("unknown websocket event name", map[string]interface{}{"event": notif.Type})
 				continue
 			}
 
@@ -383,20 +383,20 @@ func (p *Plex) SubscribeToNotifications(events *NotificationEvents, interrupt <-
 					fn(err)
 				}
 			case <-interrupt:
-				fmt.Println("interrupt")
+				logger.Info("websocket interrupt received", nil)
 				// To cleanly close a connection, a client should send a close
 				// frame and wait for the server to close the connection.
 				err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 
 				if err != nil {
-					fmt.Println("write close:", err)
+					logger.Error("websocket write close failed", map[string]interface{}{"error": err.Error()})
 					fn(err)
 				}
 
 				select {
 				case <-done:
 				case <-time.After(time.Second):
-					fmt.Println("closing websocket...")
+					logger.Info("closing websocket", nil)
 					if closeErr := c.Close(); closeErr != nil {
 						// Log the error but don't override the main error
 					}
