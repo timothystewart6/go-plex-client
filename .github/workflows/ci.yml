@@ -2,53 +2,59 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 permissions:
   contents: read
 
 jobs:
-  test:
-    name: Unit tests
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go-version: ["1.19", "1.20", "1.21"]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: ${{ matrix.go-version }}
-          cache: true
-      - name: Run tests
-        run: go test -v -race -coverprofile=coverage.out ./...
-        env:
-          CGO_ENABLED: "1"
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage.out
-          fail_ci_if_error: false
-
   lint:
     name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: '1.21'
           cache: true
-      - name: golangci-lint
+      - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v4
         with:
           version: v1.59.0
           args: --timeout=5m
 
+  test:
+    name: Test (matrix)
+    needs: lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: [ '1.19', '1.20', '1.21' ]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: true
+      - name: Run tests
+        run: |
+          go test -v -race -coverprofile=coverage-${{ matrix.go-version }}.out ./...
+        env:
+          CGO_ENABLED: '1'
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.go-version }}.out
+          path: coverage-${{ matrix.go-version }}.out
+
   build:
-    name: Build library
+    name: Build (cross-compile)
+    needs: test
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -65,16 +71,15 @@ jobs:
           - goos: windows
             goarch: amd64
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-go@v5
-      with:
-        go-version: "1.21"
-        cache: true
-    - name: Build example command
-      run: go build -o ./bin/example ./cmd/
-      env:
-        CGO_ENABLED: "0"
-        GOOS: ${{ matrix.goos }}
-        GOARCH: ${{ matrix.goarch }}
-    - name: Test library builds as module
-      run: go mod download && go mod verify
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: true
+      - name: Build example command
+        run: |
+          CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o ./bin/example-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd/
+      - name: Test library builds as module
+        run: |
+          go mod download && go mod verify
