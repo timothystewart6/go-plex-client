@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 )
 
 var (
@@ -74,6 +75,23 @@ func WithInsecureSkipVerify() Option {
 			ndt := dt.Clone()
 			ndt.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 			p.DownloadClient.Transport = ndt
+		}
+
+		// Configure per-client websocket dialer so websocket connections honor
+		// the same TLS settings. Clone the default dialer if present.
+		if websocket.DefaultDialer != nil {
+			d := *websocket.DefaultDialer
+			if d.TLSClientConfig == nil {
+				d.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+			} else {
+				// clone existing TLS config and set InsecureSkipVerify
+				cfg := *d.TLSClientConfig
+				cfg.InsecureSkipVerify = true
+				d.TLSClientConfig = &cfg
+			}
+			p.WebsocketDialer = &d
+		} else {
+			p.WebsocketDialer = &websocket.Dialer{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 		}
 	}
 }

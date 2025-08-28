@@ -535,3 +535,38 @@ func TestBackgroundProcessingQueueEventNotification_UnmarshalJSON(t *testing.T) 
 		})
 	}
 }
+
+func TestWithInsecureSkipVerifySetsWebsocketDialer(t *testing.T) {
+	p, err := New("https://example.local", "token", WithInsecureSkipVerify())
+	if err != nil {
+		t.Fatalf("unexpected error from New: %v", err)
+	}
+
+	if p.WebsocketDialer == nil {
+		t.Fatalf("expected WebsocketDialer to be non-nil when WithInsecureSkipVerify is used")
+	}
+
+	if p.WebsocketDialer.TLSClientConfig == nil || !p.WebsocketDialer.TLSClientConfig.InsecureSkipVerify {
+		t.Fatalf("expected WebsocketDialer.TLSClientConfig.InsecureSkipVerify to be true")
+	}
+}
+
+func TestEnvVarEnablesWebsocketDialerSkipTLS(t *testing.T) {
+	if err := os.Setenv("SKIP_TLS_VERIFICATION", "true"); err != nil {
+		t.Fatalf("failed to set env: %v", err)
+	}
+	defer os.Unsetenv("SKIP_TLS_VERIFICATION")
+
+	p, err := New("https://example.local", "token")
+	if err != nil {
+		t.Fatalf("unexpected error from New: %v", err)
+	}
+
+	if p.WebsocketDialer == nil {
+		t.Fatalf("expected WebsocketDialer to be non-nil when SKIP_TLS_VERIFICATION is set")
+	}
+
+	if p.WebsocketDialer.TLSClientConfig == nil || !p.WebsocketDialer.TLSClientConfig.InsecureSkipVerify {
+		t.Fatalf("expected WebsocketDialer.TLSClientConfig.InsecureSkipVerify to be true due to env var")
+	}
+}
