@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"go.uber.org/zap"
 )
 
 // TimelineEntry ...
@@ -344,7 +345,7 @@ func (p *Plex) SubscribeToNotifications(events *NotificationEvents, interrupt <-
 			_, message, err := c.ReadMessage()
 
 			if err != nil {
-				logger.Error("websocket read error", map[string]interface{}{"error": err.Error()})
+				logger.Error("websocket read error", zap.String("error", err.Error()))
 				fn(err)
 				return
 			}
@@ -354,7 +355,7 @@ func (p *Plex) SubscribeToNotifications(events *NotificationEvents, interrupt <-
 			var notif WebsocketNotification
 
 			if err := json.Unmarshal(message, &notif); err != nil {
-				logger.Warn("failed to unmarshal websocket message", map[string]interface{}{"error": err.Error()})
+				logger.Warn("failed to unmarshal websocket message", zap.String("error", err.Error()))
 				continue
 			}
 
@@ -362,7 +363,7 @@ func (p *Plex) SubscribeToNotifications(events *NotificationEvents, interrupt <-
 			fn, ok := events.events[notif.Type]
 
 			if !ok {
-				logger.Warn("unknown websocket event name", map[string]interface{}{"event": notif.Type})
+				logger.Warn("unknown websocket event name", zap.String("event", notif.Type))
 				continue
 			}
 
@@ -383,20 +384,20 @@ func (p *Plex) SubscribeToNotifications(events *NotificationEvents, interrupt <-
 					fn(err)
 				}
 			case <-interrupt:
-				logger.Info("websocket interrupt received", nil)
+				logger.Info("websocket interrupt received")
 				// To cleanly close a connection, a client should send a close
 				// frame and wait for the server to close the connection.
 				err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 
 				if err != nil {
-					logger.Error("websocket write close failed", map[string]interface{}{"error": err.Error()})
+					logger.Error("websocket write close failed", zap.String("error", err.Error()))
 					fn(err)
 				}
 
 				select {
 				case <-done:
 				case <-time.After(time.Second):
-					logger.Info("closing websocket", nil)
+					logger.Info("closing websocket")
 					if closeErr := c.Close(); closeErr != nil {
 						// Log the error but don't override the main error
 					}

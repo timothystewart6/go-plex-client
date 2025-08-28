@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"go.uber.org/zap"
 )
 
 var (
@@ -965,7 +966,7 @@ func (p *Plex) GetDevices() ([]PMSDevices, error) {
 	}
 
 	if err := xml.NewDecoder(resp.Body).Decode(result); err != nil {
-		logger.Error("failed to decode devices response", map[string]interface{}{"error": err.Error()})
+		logger.Error("failed to decode devices response", zap.String("error", err.Error()))
 
 		return []PMSDevices{}, err
 	}
@@ -1019,7 +1020,7 @@ func (p *Plex) GetServersInfo() (ServerInfo, error) {
 	result := ServerInfo{}
 
 	if err := xml.NewDecoder(resp.Body).Decode(&result); err != nil {
-		logger.Error("failed to decode servers info response", map[string]interface{}{"error": err.Error()})
+		logger.Error("failed to decode servers info response", zap.String("error", err.Error()))
 
 		return ServerInfo{}, err
 	}
@@ -1074,7 +1075,7 @@ func (p *Plex) GetSections(machineID string) ([]ServerSections, error) {
 	var result SectionIDResponse
 
 	if err := xml.NewDecoder(resp.Body).Decode(&result); err != nil {
-		logger.Error("failed to decode sections response", map[string]interface{}{"error": err.Error()})
+		logger.Error("failed to decode sections response", zap.String("error", err.Error()))
 
 		return []ServerSections{}, err
 	}
@@ -1111,7 +1112,7 @@ func (p *Plex) GetLibraries() (LibrarySections, error) {
 	var result LibrarySections
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		logger.Error("failed to decode libraries response", map[string]interface{}{"error": err.Error()})
+		logger.Error("failed to decode libraries response", zap.String("error", err.Error()))
 
 		return LibrarySections{}, err
 	}
@@ -1304,7 +1305,7 @@ func (p *Plex) GetLibraryLabels(sectionKey, sectionIndex string) (LibraryLabels,
 	var result LibraryLabels
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		logger.Error("failed to decode library labels response", map[string]interface{}{"error": err.Error()})
+		logger.Error("failed to decode library labels response", zap.String("error", err.Error()))
 
 		return LibraryLabels{}, err
 	}
