@@ -555,7 +555,7 @@ func TestEnvVarEnablesWebsocketDialerSkipTLS(t *testing.T) {
 	if err := os.Setenv("SKIP_TLS_VERIFICATION", "true"); err != nil {
 		t.Fatalf("failed to set env: %v", err)
 	}
-	defer os.Unsetenv("SKIP_TLS_VERIFICATION")
+	defer func() { _ = os.Unsetenv("SKIP_TLS_VERIFICATION") }()
 
 	p, err := New("https://example.local", "token")
 	if err != nil {

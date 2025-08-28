@@ -13,8 +13,8 @@ import (
 // safeClose safely closes an io.Closer and handles the error
 func safeClose(closer io.Closer) {
 	if closer != nil {
-	// Close and explicitly ignore any error to avoid empty branches.
-	_ = closer.Close()
+		// Close and explicitly ignore any error to avoid empty branches.
+		_ = closer.Close()
 	}
 }
 

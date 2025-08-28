@@ -127,7 +127,7 @@ func TestGet(t *testing.T) {
 				}
 
 				w.WriteHeader(tt.statusCode)
-				w.Write([]byte(tt.responseBody))
+				_, _ = w.Write([]byte(tt.responseBody))
 			}))
 			defer server.Close()
 
@@ -146,7 +146,7 @@ func TestGet(t *testing.T) {
 					t.Errorf("Expected status code %d, got %d", tt.statusCode, resp.StatusCode)
 				}
 
-				resp.Body.Close()
+				_ = resp.Body.Close()
 			}
 		})
 	}
@@ -173,7 +173,7 @@ func TestGet_Timeout(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create listener: %v", err)
 	}
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 
 	// Don't accept connections to force timeout
 	serverURL := "http://" + listener.Addr().String() + "/test"
@@ -282,13 +282,13 @@ func TestPost(t *testing.T) {
 
 				// Read and verify body
 				buf := make([]byte, len(tt.body))
-				r.Body.Read(buf)
+				_, _ = r.Body.Read(buf)
 				if string(buf) != string(tt.body) {
 					t.Errorf("Expected body %s, got %s", string(tt.body), string(buf))
 				}
 
 				w.WriteHeader(tt.statusCode)
-				w.Write([]byte(tt.responseBody))
+				_, _ = w.Write([]byte(tt.responseBody))
 			}))
 			defer server.Close()
 
@@ -307,7 +307,7 @@ func TestPost(t *testing.T) {
 					t.Errorf("Expected status code %d, got %d", tt.statusCode, resp.StatusCode)
 				}
 
-				resp.Body.Close()
+				_ = resp.Body.Close()
 			}
 		})
 	}

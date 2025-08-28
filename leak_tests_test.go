@@ -76,13 +76,13 @@ func TestGetFriends_LargePayload(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/xml")
-		fmt.Fprintf(w, "<MediaContainer size=\"%d\">", want)
+		_, _ = fmt.Fprintf(w, "<MediaContainer size=\"%d\">", want)
 
 		for i := 0; i < want; i++ {
-			fmt.Fprintf(w, `<User id="%d" title="u%d"><Server id="%d" serverId="s%d" machineIdentifier="m%d" name="n%d" lastSeenAt="now" numLibraries="1" allLibraries="1" owned="1" pending="0"/></User>`, i, i, i, i, i, i)
+			_, _ = fmt.Fprintf(w, `<User id="%d" title="u%d"><Server id="%d" serverId="s%d" machineIdentifier="m%d" name="n%d" lastSeenAt="now" numLibraries="1" allLibraries="1" owned="1" pending="0"/></User>`, i, i, i, i, i, i)
 		}
 
-		fmt.Fprint(w, "</MediaContainer>")
+		_, _ = fmt.Fprint(w, "</MediaContainer>")
 	}))
 	defer srv.Close()
 

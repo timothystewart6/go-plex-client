@@ -4,19 +4,11 @@ run:
   timeout: 5m
 
 linters:
-  # Enable a focused subset of linters to improve coverage while avoiding
-  # noisy false positives. Keep the more noisy/strict linters disabled for
-  # now.
-  enable:
-    - staticcheck   # strong static analysis, useful for correctness
-    - ineffassign   # detect ineffectual assignments
-    - unused        # find unused variables/constants/functions
+  enable-all: true
 
-  disable:
-    - errcheck      # often noisy in tests and legacy code
-    # - gosec         # security scanner; run separately when needed
-    - gocritic      # very opinionated; enable later for targeted rules
-    # - gocyclo       # complexity thresholds can be tuned later
+  # Still allow disabling specific linters if they prove too noisy; keep
+  # this list empty for now since we want a full picture.
+  disable: []
 
 linters-settings:
   gocyclo:

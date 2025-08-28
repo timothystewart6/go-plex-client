@@ -18,7 +18,7 @@ func newJSONTestServer(code int, body interface{}) (*httptest.Server, *Plex) {
 		w.WriteHeader(code)
 		w.Header().Set("Content-Type", applicationJson)
 		if body != nil {
-			json.NewEncoder(w).Encode(body)
+			_ = json.NewEncoder(w).Encode(body)
 		}
 	}))
 
@@ -38,7 +38,7 @@ func newXMLTestServer(code int, body string) (*httptest.Server, *Plex) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(code)
 		w.Header().Set("Content-Type", applicationXml)
-		fmt.Fprintln(w, body)
+		_, _ = fmt.Fprintln(w, body)
 	}))
 
 	transport := &http.Transport{
@@ -369,7 +369,7 @@ func TestPlex_GetThumbnail(t *testing.T) {
 			t.Errorf("GetThumbnail() wrong path = %v", r.URL.Path)
 		}
 		w.WriteHeader(200)
-		w.Write([]byte("fake image data"))
+		_, _ = w.Write([]byte("fake image data"))
 	}))
 	defer server.Close()
 
@@ -387,7 +387,7 @@ func TestPlex_GetThumbnail(t *testing.T) {
 		t.Errorf("GetThumbnail() error = %v", err)
 		return
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != 200 {
 		t.Errorf("GetThumbnail() status = %v, want 200", resp.StatusCode)
@@ -577,13 +577,13 @@ func TestPlex_GetLibrariesWithCounts(t *testing.T) {
 
 		switch r.URL.Path {
 		case "/library/sections":
-			json.NewEncoder(w).Encode(sectionsResponse)
+			_ = json.NewEncoder(w).Encode(sectionsResponse)
 		case "/library/sections/1/all":
-			json.NewEncoder(w).Encode(movieContent)
+			_ = json.NewEncoder(w).Encode(movieContent)
 		case "/library/sections/2/all":
-			json.NewEncoder(w).Encode(musicContent)
+			_ = json.NewEncoder(w).Encode(musicContent)
 		case "/library/sections/3/all":
-			json.NewEncoder(w).Encode(tvContent)
+			_ = json.NewEncoder(w).Encode(tvContent)
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -1034,12 +1034,12 @@ func TestPlex_Download(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.URL.Path, "/library/parts/") && strings.Contains(r.URL.RawQuery, "download=1") {
 			w.WriteHeader(200)
-			w.Write([]byte("fake media content"))
+			_, _ = w.Write([]byte("fake media content"))
 		} else {
 			w.WriteHeader(404)
 		}
@@ -1118,7 +1118,7 @@ func TestPlex_SignIn(t *testing.T) {
 
 		w.WriteHeader(http.StatusCreated)
 		w.Header().Set("Content-Type", applicationJson)
-		json.NewEncoder(w).Encode(successResponse)
+		_ = json.NewEncoder(w).Encode(successResponse)
 	}))
 	defer server.Close()
 
@@ -1139,7 +1139,7 @@ func TestPlex_SignIn(t *testing.T) {
 	// Test sign in error response
 	serverError := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Unauthorized"))
+		_, _ = w.Write([]byte("Unauthorized"))
 	}))
 	defer serverError.Close()
 
@@ -1152,7 +1152,7 @@ func TestPlex_SignIn(t *testing.T) {
 	// Test invalid JSON response
 	serverBadJSON := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte("invalid json"))
+		_, _ = w.Write([]byte("invalid json"))
 	}))
 	defer serverBadJSON.Close()
 
@@ -1171,7 +1171,7 @@ func TestPlex_Test(t *testing.T) {
 			t.Errorf("Test() path = %v", r.URL.Path)
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	}))
 	defer server.Close()
 
@@ -1200,7 +1200,7 @@ func TestPlex_Test(t *testing.T) {
 	// Test unauthorized response
 	serverUnauth := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Unauthorized"))
+		_, _ = w.Write([]byte("Unauthorized"))
 	}))
 	defer serverUnauth.Close()
 
@@ -1221,7 +1221,7 @@ func TestPlex_Test(t *testing.T) {
 	// Test non-OK status
 	serverError := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Server Error"))
+		_, _ = w.Write([]byte("Server Error"))
 	}))
 	defer serverError.Close()
 
@@ -1256,7 +1256,7 @@ func TestPlex_GetPlexTokens(t *testing.T) {
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", applicationJson)
-		json.NewEncoder(w).Encode(devicesResponse)
+		_ = json.NewEncoder(w).Encode(devicesResponse)
 	}))
 	defer server.Close()
 
@@ -1286,7 +1286,7 @@ func TestPlex_GetPlexTokens(t *testing.T) {
 	// Test unauthorized response
 	serverUnauth := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Unauthorized"))
+		_, _ = w.Write([]byte("Unauthorized"))
 	}))
 	defer serverUnauth.Close()
 
@@ -1313,7 +1313,7 @@ func TestPlex_DeletePlexToken(t *testing.T) {
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", applicationJson)
-		json.NewEncoder(w).Encode(true)
+		_ = json.NewEncoder(w).Encode(true)
 	}))
 	defer server.Close()
 
@@ -1343,7 +1343,7 @@ func TestPlex_DeletePlexToken(t *testing.T) {
 	// Test unauthorized response
 	serverUnauth := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Unauthorized"))
+		_, _ = w.Write([]byte("Unauthorized"))
 	}))
 	defer serverUnauth.Close()
 
@@ -1389,7 +1389,7 @@ func TestPlex_SearchPlex(t *testing.T) {
 
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", applicationJson)
-		json.NewEncoder(w).Encode(searchResponse)
+		_ = json.NewEncoder(w).Encode(searchResponse)
 	}))
 	defer server.Close()
 
@@ -1439,7 +1439,7 @@ func TestPlex_SearchPlex(t *testing.T) {
 	serverSmall := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", applicationJson)
-		json.NewEncoder(w).Encode(smallResponse)
+		_ = json.NewEncoder(w).Encode(smallResponse)
 	}))
 	defer serverSmall.Close()
 
@@ -1582,7 +1582,7 @@ func TestPlex_RemoveInvitedFriend_Coverage(t *testing.T) {
 				w.WriteHeader(tt.statusCode)
 				if tt.responseXML != "" {
 					w.Header().Set("Content-Type", "application/xml")
-					w.Write([]byte(tt.responseXML))
+					_, _ = w.Write([]byte(tt.responseXML))
 				}
 			}))
 			defer server.Close()
@@ -1671,7 +1671,7 @@ func TestPlex_InviteFriend(t *testing.T) {
 
 				w.WriteHeader(tt.statusCode)
 				if tt.response != nil && tt.response != "" {
-					json.NewEncoder(w).Encode(tt.response)
+					_ = json.NewEncoder(w).Encode(tt.response)
 				}
 			}))
 			defer server.Close()
@@ -1813,7 +1813,7 @@ func TestPlex_RemoveFriend(t *testing.T) {
 		}
 		w.WriteHeader(200)
 		w.Header().Set("Content-Type", applicationXml)
-		fmt.Fprintln(w, xmlResponse)
+		_, _ = fmt.Fprintln(w, xmlResponse)
 	}))
 	defer server.Close()
 
@@ -1847,7 +1847,7 @@ func TestPlex_RemoveFriend(t *testing.T) {
 	serverError := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		w.Header().Set("Content-Type", applicationXml)
-		fmt.Fprintln(w, xmlErrorResponse)
+		_, _ = fmt.Fprintln(w, xmlErrorResponse)
 	}))
 	defer serverError.Close()
 
@@ -2057,7 +2057,7 @@ func TestPlex_CheckUsernameOrEmail(t *testing.T) {
 		}
 		w.WriteHeader(200)
 		w.Header().Set("Content-Type", applicationXml)
-		fmt.Fprintln(w, xmlResponse)
+		_, _ = fmt.Fprintln(w, xmlResponse)
 	}))
 	defer server.Close()
 
@@ -2091,7 +2091,7 @@ func TestPlex_CheckUsernameOrEmail(t *testing.T) {
 	serverInvalid := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		w.Header().Set("Content-Type", applicationXml)
-		fmt.Fprintln(w, xmlInvalidResponse)
+		_, _ = fmt.Fprintln(w, xmlInvalidResponse)
 	}))
 	defer serverInvalid.Close()
 

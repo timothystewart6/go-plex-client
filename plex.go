@@ -450,7 +450,7 @@ func (p *Plex) Download(meta Metadata, path string, createFolders bool, skipIfEx
 			if err != nil {
 				return err
 			}
-				defer safeClose(out)
+			defer safeClose(out)
 
 			_, err = io.Copy(out, resp.Body)
 

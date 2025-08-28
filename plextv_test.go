@@ -72,7 +72,7 @@ func TestRequestPIN(t *testing.T) {
 
 				w.WriteHeader(tt.statusCode)
 				if tt.statusCode == http.StatusCreated {
-					json.NewEncoder(w).Encode(tt.response)
+					_ = json.NewEncoder(w).Encode(tt.response)
 				}
 			}))
 			defer server.Close()
@@ -179,7 +179,7 @@ func TestCheckPIN(t *testing.T) {
 				}
 
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -260,7 +260,7 @@ func TestPlex_LinkAccount(t *testing.T) {
 
 				// Check body content
 				body := &bytes.Buffer{}
-				body.ReadFrom(r.Body)
+				_, _ = body.ReadFrom(r.Body)
 				values, _ := url.ParseQuery(body.String())
 				if values.Get("code") != tt.code {
 					t.Errorf("Expected code %s, got %s", tt.code, values.Get("code"))
@@ -421,7 +421,7 @@ func TestPlex_GetWebhooks(t *testing.T) {
 
 				w.WriteHeader(tt.statusCode)
 				if tt.response != nil {
-					json.NewEncoder(w).Encode(tt.response)
+					_ = json.NewEncoder(w).Encode(tt.response)
 				}
 			}))
 			defer server.Close()
@@ -515,7 +515,7 @@ func TestPlex_AddWebhook(t *testing.T) {
 					for i, hook := range tt.existingHooks {
 						hooks[i].URL = hook
 					}
-					json.NewEncoder(w).Encode(hooks)
+					_ = json.NewEncoder(w).Encode(hooks)
 				case http.MethodPost:
 					setCallCount++
 					if tt.setHooksError {
@@ -601,7 +601,7 @@ func TestPlex_SetWebhooks(t *testing.T) {
 
 				// Check body content
 				body := &bytes.Buffer{}
-				body.ReadFrom(r.Body)
+				_, _ = body.ReadFrom(r.Body)
 				values, _ := url.ParseQuery(body.String())
 				urls := values["urls[]"]
 
@@ -697,7 +697,7 @@ func TestPlex_MyAccount(t *testing.T) {
 				w.WriteHeader(tt.statusCode)
 				if tt.response != "" {
 					w.Header().Set("Content-Type", "application/xml")
-					w.Write([]byte(tt.response))
+					_, _ = w.Write([]byte(tt.response))
 				}
 			}))
 			defer server.Close()

@@ -20,6 +20,15 @@ jobs:
         with:
           go-version: '1.21'
           cache: true
+      - name: Check gofmt
+        run: |
+          echo "Checking gofmt..."
+          files=$(gofmt -s -l .)
+          if [ -n "$files" ]; then
+            echo "The following files need gofmt -s (please run 'gofmt -s -w' locally):"
+            echo "$files"
+            exit 1
+          fi
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v4
         with:

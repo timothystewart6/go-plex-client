@@ -90,7 +90,7 @@ func TestWebhookEvents_Handler(t *testing.T) {
 			name: "successful play event",
 			setupFunc: func(wh *WebhookEvents) bool {
 				called := false
-				wh.OnPlay(func(w Webhook) {
+				_ = wh.OnPlay(func(w Webhook) {
 					called = true
 				})
 				return called
@@ -103,7 +103,7 @@ func TestWebhookEvents_Handler(t *testing.T) {
 			name: "successful pause event",
 			setupFunc: func(wh *WebhookEvents) bool {
 				called := false
-				wh.OnPause(func(w Webhook) {
+				_ = wh.OnPause(func(w Webhook) {
 					called = true
 				})
 				return called
@@ -170,11 +170,11 @@ func TestWebhookEvents_Handler(t *testing.T) {
 				}
 
 				if len(payloadBytes) > 0 {
-					writer.WriteField("payload", string(payloadBytes))
+					_ = writer.WriteField("payload", string(payloadBytes))
 				}
 			}
 
-			writer.Close()
+			_ = writer.Close()
 
 			req := httptest.NewRequest(http.MethodPost, "/webhook", body)
 			req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -482,11 +482,11 @@ func TestWebhookEvents_CompleteFlow(t *testing.T) {
 	var playEventReceived Webhook
 	var pauseEventReceived Webhook
 
-	wh.OnPlay(func(w Webhook) {
+	_ = wh.OnPlay(func(w Webhook) {
 		playEventReceived = w
 	})
 
-	wh.OnPause(func(w Webhook) {
+	_ = wh.OnPause(func(w Webhook) {
 		pauseEventReceived = w
 	})
 
@@ -550,8 +550,8 @@ func TestWebhookEvents_CompleteFlow(t *testing.T) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	playloadBytes, _ := json.Marshal(playWebhook)
-	writer.WriteField("payload", string(playloadBytes))
-	writer.Close()
+	_ = writer.WriteField("payload", string(playloadBytes))
+	_ = writer.Close()
 
 	req := httptest.NewRequest(http.MethodPost, "/webhook", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -570,8 +570,8 @@ func TestWebhookEvents_CompleteFlow(t *testing.T) {
 	body = &bytes.Buffer{}
 	writer = multipart.NewWriter(body)
 	pausePayloadBytes, _ := json.Marshal(pauseWebhook)
-	writer.WriteField("payload", string(pausePayloadBytes))
-	writer.Close()
+	_ = writer.WriteField("payload", string(pausePayloadBytes))
+	_ = writer.Close()
 
 	req = httptest.NewRequest(http.MethodPost, "/webhook", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())

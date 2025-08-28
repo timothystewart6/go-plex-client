@@ -417,7 +417,7 @@ func (p *Plex) SubscribeToNotificationsWithContext(ctx context.Context, events *
 				case <-done:
 				case <-time.After(time.Second):
 					logger.Info("closing websocket")
-					 safeClose(c)
+					safeClose(c)
 				}
 				return
 			}
