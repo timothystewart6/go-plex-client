@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -641,7 +640,13 @@ func (p *Plex) GetFriends() ([]Friends, error) {
 
 	var plexFriendsResp friendsResponse
 
-	query := plexURL + "/api/users"
+	// Prefer the instance URL if set (testability / local servers). Fall back to plex.tv.
+	base := plexURL
+	if p.URL != "" {
+		base = p.URL
+	}
+
+	query := base + "/api/users"
 
 	newHeaders := p.Headers
 
@@ -661,15 +666,8 @@ func (p *Plex) GetFriends() ([]Friends, error) {
 		return []Friends{}, fmt.Errorf(ErrorServerReplied, resp.StatusCode)
 	}
 
-	respBytes, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		return []Friends{}, err
-	}
-
-	err = xml.Unmarshal(respBytes, &plexFriendsResp)
-
-	if err != nil {
+	// Stream-decode the XML response to avoid buffering the entire body into memory.
+	if err := xml.NewDecoder(resp.Body).Decode(&plexFriendsResp); err != nil {
 		return []Friends{}, err
 	}
 

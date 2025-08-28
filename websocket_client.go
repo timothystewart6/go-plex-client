@@ -8,6 +8,8 @@ import (
 	"os"
 	"time"
 
+	"context"
+
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 )
@@ -301,6 +303,25 @@ func (e *NotificationEvents) OnProviderContentChange(fn func(n NotificationConta
 
 // SubscribeToNotifications connects to your server via websockets listening for events
 func (p *Plex) SubscribeToNotifications(events *NotificationEvents, interrupt <-chan os.Signal, fn func(error)) {
+	// If the caller provided an interrupt channel, create a cancellable context
+	// and bridge the channel to it. If not, pass the background context.
+	if interrupt != nil {
+		ctx, cancel := context.WithCancel(context.Background())
+		go func() {
+			<-interrupt
+			cancel()
+		}()
+
+		p.SubscribeToNotificationsWithContext(ctx, events, fn)
+		return
+	}
+
+	p.SubscribeToNotificationsWithContext(context.Background(), events, fn)
+}
+
+// SubscribeToNotificationsWithContext is a context-aware version that ensures
+// both reader and writer goroutines stop when ctx is cancelled.
+func (p *Plex) SubscribeToNotificationsWithContext(ctx context.Context, events *NotificationEvents, fn func(error)) {
 	plexURL, err := url.Parse(p.URL)
 
 	if err != nil {
@@ -333,15 +354,22 @@ func (p *Plex) SubscribeToNotifications(events *NotificationEvents, interrupt <-
 
 	done := make(chan struct{})
 
+	// Reader goroutine
 	go func() {
 		defer func() {
 			if closeErr := c.Close(); closeErr != nil {
-				// Log the error but don't override the main error
+				// ignore
 			}
 		}()
 		defer close(done)
 
 		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+
 			_, message, err := c.ReadMessage()
 
 			if err != nil {
@@ -350,8 +378,6 @@ func (p *Plex) SubscribeToNotifications(events *NotificationEvents, interrupt <-
 				return
 			}
 
-			// fmt.Printf("\t%s\n", string(message))
-
 			var notif WebsocketNotification
 
 			if err := json.Unmarshal(message, &notif); err != nil {
@@ -359,18 +385,18 @@ func (p *Plex) SubscribeToNotifications(events *NotificationEvents, interrupt <-
 				continue
 			}
 
-			// fmt.Println(notif.Type)
-			fn, ok := events.events[notif.Type]
+			cb, ok := events.events[notif.Type]
 
 			if !ok {
 				logger.Warn("unknown websocket event name", zap.String("event", notif.Type))
 				continue
 			}
 
-			fn(notif.NotificationContainer)
+			cb(notif.NotificationContainer)
 		}
 	}()
 
+	// Writer goroutine
 	go func() {
 		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()
@@ -383,12 +409,9 @@ func (p *Plex) SubscribeToNotifications(events *NotificationEvents, interrupt <-
 				if err != nil {
 					fn(err)
 				}
-			case <-interrupt:
-				logger.Info("websocket interrupt received")
-				// To cleanly close a connection, a client should send a close
-				// frame and wait for the server to close the connection.
+			case <-ctx.Done():
+				// attempt graceful close
 				err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-
 				if err != nil {
 					logger.Error("websocket write close failed", zap.String("error", err.Error()))
 					fn(err)
@@ -399,7 +422,7 @@ func (p *Plex) SubscribeToNotifications(events *NotificationEvents, interrupt <-
 				case <-time.After(time.Second):
 					logger.Info("closing websocket")
 					if closeErr := c.Close(); closeErr != nil {
-						// Log the error but don't override the main error
+						// ignore
 					}
 				}
 				return
