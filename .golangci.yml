@@ -6,8 +6,6 @@ run:
 linters:
   enable-all: true
 
-  # Still allow disabling specific linters if they prove too noisy; keep
-  # this list empty for now since we want a full picture.
   disable: []
 
 linters-settings:
